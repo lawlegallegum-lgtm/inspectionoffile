@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Humble Application for Inspection of the Court File</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #000;
+      background: #e8e8e8;
+      padding: 20px;
+    }
+
+    /* ===== Toolbar (hidden when printing) ===== */
+    .toolbar {
+      max-width: 210mm;
+      margin: 0 auto 18px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .toolbar button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-print {
+      background: #1565c0;
+      color: #fff;
+    }
+    .btn-print:hover {
+      background: #0d47a1;
+    }
+
+    .btn-save {
+      background: #2e7d32;
+      color: #fff;
+    }
+    .btn-save:hover {
+      background: #1b5e20;
+    }
+
+    .btn-clear {
+      background: #c62828;
+      color: #fff;
+    }
+    .btn-clear:hover {
+      background: #b71c1c;
+    }
+
+    /* ===== Page ===== */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #fff;
+      padding: 35mm 18mm 20mm;   /* ← Extra space on top */
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      position: relative;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .court-line {
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      margin-bottom: 14px;
+    }
+
+    /* Large input fields */
+    .blank {
+      display: inline-block;
+      border: none;
+      border-bottom: 1.5px solid #000;
+      background: transparent;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: #000;
+      padding: 2px 4px 1px;
+      min-width: 260px;
+      height: 28px;
+      vertical-align: bottom;
+      outline: none;
+    }
+
+    .blank.short { min-width: 110px; }
+    .blank.medium { min-width: 200px; }
+    .blank.long { min-width: 340px; }
+    .blank.tiny { min-width: 50px; }
+
+    .blank:focus {
+      background: #fffde7;
+      border-bottom-color: #1565c0;
+    }
+
+    .case-no {
+      margin: 12px 0 18px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .matter {
+      text-align: center;
+      margin: 18px 0 10px;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    .versus {
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      margin: 22px 0;
+    }
+
+    .right-info {
+      text-align: right;
+      margin: 14px 0 22px;
+      line-height: 2;
+      font-size: 15px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 26px 0 18px;
+      letter-spacing: 0.6px;
+    }
+
+    .showeth {
+      font-weight: bold;
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+
+    .para {
+      margin-bottom: 16px;
+      text-align: justify;
+    }
+
+    .para .num {
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .prayer-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      margin: 30px 0 16px;
+      letter-spacing: 1.5px;
+    }
+
+    .prayer {
+      text-align: justify;
+      margin-bottom: 32px;
+      font-size: 15px;
+    }
+
+    .signature-block {
+      margin-top: 45px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .left-sign { width: 48%; }
+    .right-sign { width: 48%; text-align: right; }
+
+    .sign-label {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+
+    .sign-space {
+      height: 55px;
+    }
+
+    /* ===== Print styles ===== */
+    @media print {
+      body {
+        background: none !important;
+        padding: 0 !important;
+      }
+
+      .toolbar {
+        display: none !important;   /* Hide buttons when printing */
+      }
+
+      .page {
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 30mm 15mm 15mm !important;  /* Keep good top space on print */
+      }
+
+      .blank {
+        border-bottom: 1px solid #000 !important;
+        background: transparent !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .blank:focus {
+        background: transparent !important;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn-print" onclick="window.print()">
+      🖨️ Print
+    </button>
+    <button class="btn-save" onclick="saveAsPDF()">
+      💾 Save as PDF
+    </button>
+    <button class="btn-clear" onclick="clearAll()">
+      🗑️ Clear All
+    </button>
+  </div>
+
+  <div class="page" id="formPage">
+
+    <!-- Court Header -->
+    <div class="header">
+      <div class="court-line">
+        IN THE COURT OF <input type="text" style="font-weight:bold;"class="blank w600 long" placeholder="">
+        <input type="text"style="font-weight:bold;"class="blank w100" placeholder="">
+
+      </div>
+    </div>
+
+    <!-- Case Number -->
+    <div class="case-no">
+      NO <input type="text" class="blank tiny" placeholder=""> OF 20<input type="text" class="blank tiny" placeholder="">
+    </div>
+
+    <!-- Matter -->
+    <div class="matter">
+      IN THE MATTER OF
+    </div>
+
+    <div style="text-align:center; margin: 12px 0 8px;">
+      <input type="text" class="blank long" placeholder="" style="min-width:380px;">
+    </div>
+
+    <div class="versus">VERSUS</div>
+
+    <div style="text-align:center; margin: 8px 0 18px;">
+      <input type="text" class="blank long" placeholder="" style="min-width:380px;">
+    </div>
+
+    <!-- Right side info -->
+    <div class="right-info">
+      FIR / Case No. <input type="text" class="blank medium" placeholder=""><br>
+      NDOH :- <input type="text" class="blank very tiny" placeholder="">
+    </div>
+
+    <!-- Title -->
+    <div class="title">
+      HUMBLE APPLICATION FOR INSPECTION OF THE COURT FILE
+    </div>
+
+    <div class="showeth">MOST RESPECTFULLY SHOWETH :-</div>
+
+    <div class="para">
+      <span class="num">1.</span>
+      That the above said matter is pending adjudication and determination before the Hon’ble Court
+      and the next date of hearing is <input type="text" class="blank short" placeholder="">.
+    </div>
+
+    <div class="para">
+      <span class="num">2.</span>
+      That the counsel for the <input type="text" class="blank medium" placeholder=""> wants to inspect the Court file and
+      documents.
+    </div>
+
+    <!-- Prayer -->
+    <div class="prayer-title">PRAYER</div>
+
+    <div class="prayer">
+      It is therefore, most respectfully prayed that this Hon’ble Court may be pleased to allow the Counsel for
+      the <input type="text" class="blank medium" placeholder=""> to inspect the Court file.
+    </div>
+    <!-- Signature block -->
+    <div class="signature-block">
+      <div class="left-sign">
+        <div style="margin-bottom: 0px;">Yours faithfully</div>
+        <div class="sign-space"></div>
+        <div class="sign-label">
+          Advocate<br>
+          <input type="text" class="blank " placeholder="" style="margin-top:6px;">
+        </div>
+         <div style="margin-top: 12px;">
+          DATED : <input type="text" class="blank short" placeholder="">
+        </div>
+      </div>
+
+      <div class="right-sign">
+        <div class="sign-space"></div>
+        <div class="sign-label">
+        Address
+          <input type="text" class="blank medium" placeholder="" style="margin-top:6px; text-align:right;">
+        </div>
+        <div style="margin-top: 45px; line-height:1.5;">
+          For the Petitioner /<br>
+          Respondent
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Save as PDF – opens the browser print dialog with "Save as PDF" option
+    function saveAsPDF() {
+      window.print();
+    }
+
+    // Clear all input fields
+    function clearAll() {
+      if (confirm("Clear all filled data?")) {
+        document.querySelectorAll('.blank').forEach(input => input.value = '');
+      }
+    }
+  </script>
+</body>
+</html>
